@@ -19,33 +19,44 @@ function textedit_request(msg) {
 }
 
 app.registerExtension({
-	name: "cg.textedit",
+    name: "cg.textedit",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeType?.comfyClass==="Text Edit") {
+        if (nodeType?.comfyClass === "Text Edit") {
             nodeType.prototype.receive_textedit_request = function(msg) {
-                this.widgets[2].value = msg
-                this.widgets[2].element.disabled = false
+                let editorWidget = this.widgets.find(w => w.name === "editor");
+                if (editorWidget) {
+                    editorWidget.value = msg;
+                    if (editorWidget.element) editorWidget.element.disabled = false;
+                }
             }
             nodeType.prototype.receive_textedit_timeup = function() {
-                send_message( this.id, this.widgets[2].value )
-                this.widgets[2].element.disabled = true
+                let editorWidget = this.widgets.find(w => w.name === "editor");
+                if (editorWidget) {
+                    send_message(this.id, editorWidget.value);
+                    if (editorWidget.element) editorWidget.element.disabled = true;
+                }
             }
             nodeType.prototype.handle_key = function(e) {
-                if (e.key == 'Enter' && e.shiftKey) {
-                    send_message( this.id, this.widgets[2].value )
-                    this.widgets[2].element.disabled = true
+                if (e.key === "Enter" && e.shiftKey) {
+                    let editorWidget = this.widgets.find(w => w.name === "editor");
+                    if (editorWidget) {
+                        send_message(this.id, editorWidget.value);
+                        if (editorWidget.element) editorWidget.element.disabled = true;
+                    }
                 }
             }
         }
     },
     async nodeCreated(node) {
         if (node.receive_textedit_request) {
-            node.widgets[2].element.disabled = true
-            node.widgets[2].element.addEventListener('keydown',node.handle_key.bind(node))
+            let editorWidget = node.widgets.find(w => w.name === "editor");
+            if (editorWidget && editorWidget.element) {
+                editorWidget.element.disabled = true;
+                editorWidget.element.addEventListener("keydown", node.handle_key.bind(node));
+            }
         }
     },
     setup() {
         api.addEventListener("textedit_request", textedit_request);
     }
-
 })
